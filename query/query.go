@@ -110,11 +110,11 @@ func (req *Request) GetChallengeToken() (int32, error) {
 // ReadWithDeadline will read from our socket with a specified timeout
 func (req *Request) ReadWithDeadline(length int, timeout time.Duration) ([]byte, error) {
 	res := make([]byte, length)
-	req.con.SetDeadline(time.Now().Add(timeout * time.Second))
+	req.con.SetDeadline(time.Now().Add(timeout * time.Millisecond))
 	bytes, err := req.con.Read(res)
 	req.con.SetDeadline(time.Time{})
 	if bytes == 0 || err != nil {
-		return nil, errors.New("timeout of " + strconv.Itoa(int(timeout)) + "s exceeded when reading from server")
+		return nil, errors.New("timeout of " + strconv.Itoa(int(timeout)) + "ms exceeded when reading from server (" + err.Error() + ")")
 	}
 	return res, nil
 }
