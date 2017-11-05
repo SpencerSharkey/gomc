@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/spencersharkey/gomc/query"
 )
@@ -10,7 +11,7 @@ import (
 func main() {
 	req := query.NewRequest()
 
-	err := req.Connect("mc.revive.gg:25565")
+	err := req.Connect(os.Args[1])
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -20,5 +21,5 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	log.Println(res)
+	log.Printf("%#v\n", res)
 }
