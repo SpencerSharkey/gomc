@@ -114,22 +114,10 @@ func (req *Request) GetChallengeToken() (int32, error) {
 	return int32(challengeToken), nil
 }
 
-// A simple scanner to read our null-byte delimited data
+// A simple scanner func to read our null-byte delimited data
 func scanDelimittedResponse(input []byte, eof bool) (adv int, token []byte, err error) {
-	if eof && len(input) == 0 {
-		return 0, nil, nil
-	}
-
 	i := bytes.Index(input, []byte{0x00})
-	if i >= 0 {
-		return i + 1, input[:i], nil
-	}
-
-	if eof {
-		return len(input), input[:1], nil
-	}
-
-	return 0, nil, nil
+	return i + 1, input[:i], nil
 }
 
 // Simple - Make a simple query request
