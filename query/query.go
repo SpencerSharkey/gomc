@@ -48,8 +48,21 @@ type FullResponse struct {
 
 // Request - Query Client
 type Request struct {
-	con        *net.UDPConn
-	sesssionID int32
+	con         *net.UDPConn
+	readTimeout time.Duration
+	sesssionID  int32
+}
+
+// ReadWithDeadline will read from our socket with a specified timeout
+func (req *Request) ReadWithDeadline(length int, timeout time.Duration) ([]byte, error) {
+	res := make([]byte, length)
+	req.con.SetDeadline(time.Now().Add(timeout * time.Second))
+	bytes, err := req.con.Read(res)
+	req.con.SetDeadline(time.Time{})
+	if bytes == 0 || err != nil {
+		return nil, errors.New("timeout of " + strconv.Itoa(int(timeout)) + "s exceeded when reading from server")
+	}
+	return res, nil
 }
 
 // Connect initiates a new connection to the Minecraft server host
@@ -64,6 +77,10 @@ func (req *Request) Connect(hostaddr string) error {
 		return errors.New("error dialing UDP connection")
 	}
 
+	// set default read timeout
+	req.readTimeout = 5000
+
+	// Generate a Session ID
 	req.sesssionID = GenerateSessionID()
 
 	return nil
@@ -83,10 +100,12 @@ func (req *Request) GetChallengeToken() (int32, error) {
 
 	req.con.Write(buf.Bytes())
 
-	res := make([]byte, 24)
-	req.con.Read(res)
+	res, err := req.ReadWithDeadline(24, req.readTimeout)
+	if err != nil {
+		return -1, err
+	}
 
-	// Parse challegne response
+	// Parse challenge response
 	challengeToken, err := strconv.ParseUint(string(res[5:bytes.IndexByte(res[5:], 0x00)+5]), 10, 32)
 	if err != nil {
 		return -1, errors.New("error parsing challenge response from server")
@@ -136,6 +155,8 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	req.con.Write(buf.Bytes())
 
 	// Read and parse query data
+	req.con.SetReadDeadline(time.Now().Add(req.readTimeout * time.Millisecond))
+
 	reader := bufio.NewReader(req.con)
 	reader.Discard(5) // Discard header data
 	scan := bufio.NewScanner(reader)
@@ -166,6 +187,7 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	portAndIP := scan.Bytes()
 	response.HostPort = int16(binary.LittleEndian.Uint16(portAndIP[:2]))
 	response.HostIP = string(portAndIP[2:])
+	req.con.SetReadDeadline(time.Time{})
 
 	return response, nil
 }
