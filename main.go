@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/spencersharkey/gomc/query"
+	"github.com/SpencerSharkey/gomc/query"
 )
 
 // simple query test
