@@ -19,17 +19,6 @@ var (
 	magicHeader = &[]byte{0xFE, 0xFD}
 )
 
-// SimpleResponse - Simple Minecraft server query response
-type SimpleResponse struct {
-	MOTD       string
-	GameType   string
-	Map        string
-	NumPlayers int
-	MaxPlayers int
-	HostPort   int16
-	HostIP     string
-}
-
 // FullResponse - Full Minecraft server query response
 type FullResponse struct {
 	MOTD       string

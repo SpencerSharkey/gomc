@@ -14,6 +14,17 @@ import (
 	"time"
 )
 
+// SimpleResponse - Simple Minecraft server query response
+type SimpleResponse struct {
+	MOTD       string
+	GameType   string
+	Map        string
+	NumPlayers int
+	MaxPlayers int
+	HostPort   int16
+	HostIP     string
+}
+
 // Simple - Make a simple query request
 func (req *Request) Simple() (*SimpleResponse, error) {
 	response := &SimpleResponse{}
