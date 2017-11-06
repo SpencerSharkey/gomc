@@ -41,6 +41,9 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 
 	reader := bufio.NewReader(req.con)
 	reader.Discard(5) // Discard header data
+	if reader.Buffered() < 5 {
+		return nil, errors.New("malformed query response")
+	}
 	scan := bufio.NewScanner(reader)
 	scan.Split(scanDelimittedResponse)
 
@@ -56,13 +59,13 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	scan.Scan()
 	response.NumPlayers, err = strconv.Atoi(scan.Text())
 	if err != nil {
-		return nil, errors.New("error parsing numplayers field")
+		return nil, errors.New("malformed query response")
 	}
 
 	scan.Scan()
 	response.MaxPlayers, err = strconv.Atoi(scan.Text())
 	if err != nil {
-		return nil, errors.New("error parsing maxplayers field")
+		return nil, errors.New("malformed query response")
 	}
 
 	scan.Scan()

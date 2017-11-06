@@ -127,6 +127,9 @@ func GenerateSessionID() int32 {
 
 // A simple scanner func to read our null-byte delimited data
 func scanDelimittedResponse(input []byte, eof bool) (adv int, token []byte, err error) {
+	if len(input) == 0 {
+		return 0, nil, errors.New("end of input")
+	}
 	i := bytes.Index(input, []byte{0x00})
 	return i + 1, input[:i], nil
 }
