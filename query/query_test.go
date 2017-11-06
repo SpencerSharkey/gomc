@@ -20,7 +20,7 @@ func TestSimpleQuery(t *testing.T) {
 
 	req := NewRequest()
 
-	err := req.Connect(":24565")
+	err := req.Connect("127.0.0.1:24565")
 	checkFatalErr(t, err)
 
 	res, err := req.Simple()
