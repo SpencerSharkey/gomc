@@ -1,4 +1,4 @@
-package main
+package query
 
 import (
 	"bytes"
@@ -6,8 +6,6 @@ import (
 	"net"
 	"reflect"
 	"testing"
-
-	"github.com/spencersharkey/gomc/query"
 )
 
 func checkFatalErr(t *testing.T, err error) {
@@ -20,7 +18,7 @@ func TestSimpleQuery(t *testing.T) {
 
 	go startQueryServer()
 
-	req := query.NewRequest()
+	req := NewRequest()
 
 	err := req.Connect(":24565")
 	checkFatalErr(t, err)
@@ -28,7 +26,7 @@ func TestSimpleQuery(t *testing.T) {
 	res, err := req.Simple()
 	checkFatalErr(t, err)
 
-	validResponse := &query.SimpleResponse{
+	validResponse := &SimpleResponse{
 		MOTD:       "A Minecraft Server",
 		GameType:   "SMP",
 		Map:        "world",
