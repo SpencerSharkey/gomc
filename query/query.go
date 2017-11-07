@@ -16,23 +16,11 @@ import (
 )
 
 var (
+	// Used at the beginning of any query request
 	magicHeader = &[]byte{0xFE, 0xFD}
+	// Used at the end of a full-stats query request
+	magicPadding = &[]byte{0x00, 0x00, 0x00, 0x00}
 )
-
-// FullResponse - Full Minecraft server query response
-type FullResponse struct {
-	MOTD       string
-	GameType   string
-	GameID     string
-	Version    string
-	Plugins    string
-	Map        string
-	NumPlayers int
-	MaxPlayers int
-	HostPort   int16
-	HostIP     string
-	Players    []string
-}
 
 // Request - Query Client
 type Request struct {
@@ -51,12 +39,12 @@ func NewRequest() *Request {
 func (req *Request) Connect(hostaddr string) error {
 	addr, err := net.ResolveUDPAddr("udp4", hostaddr)
 	if err != nil {
-		return errors.New("error resolving host")
+		return errors.New("error resolving host: " + err.Error())
 	}
 
 	req.con, err = net.DialUDP("udp4", nil, addr)
 	if err != nil {
-		return errors.New("error dialing UDP connection")
+		return errors.New("error dialing udp4: " + err.Error())
 	}
 
 	// set default read timeout
@@ -94,6 +82,11 @@ func (req *Request) GetChallengeToken() (int32, error) {
 	}
 
 	return int32(challengeToken), nil
+}
+
+// SetReadTimeout specifies the maximum time to take reading from server before timeout (in milliseconds)
+func (req *Request) SetReadTimeout(timeout time.Duration) {
+	req.readTimeout = timeout
 }
 
 // ReadWithDeadline will read from our socket with a specified timeout

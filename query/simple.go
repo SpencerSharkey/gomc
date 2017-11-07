@@ -48,13 +48,16 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	req.con.Write(buf.Bytes())
 
 	// Read and parse query data
-	req.con.SetReadDeadline(time.Now().Add(req.readTimeout * time.Millisecond))
 
 	reader := bufio.NewReader(req.con)
+
+	req.con.SetReadDeadline(time.Now().Add(req.readTimeout * time.Millisecond))
 	reader.Discard(5) // Discard header data
+
 	if reader.Buffered() < 5 {
 		return nil, errors.New("malformed query response")
 	}
+
 	scan := bufio.NewScanner(reader)
 	scan.Split(scanDelimittedResponse)
 
@@ -68,16 +71,10 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	response.Map = scan.Text()
 
 	scan.Scan()
-	response.NumPlayers, err = strconv.Atoi(scan.Text())
-	if err != nil {
-		return nil, errors.New("malformed query response")
-	}
+	response.NumPlayers, _ = strconv.Atoi(scan.Text())
 
 	scan.Scan()
-	response.MaxPlayers, err = strconv.Atoi(scan.Text())
-	if err != nil {
-		return nil, errors.New("malformed query response")
-	}
+	response.MaxPlayers, _ = strconv.Atoi(scan.Text())
 
 	scan.Scan()
 	portAndIP := scan.Bytes()
