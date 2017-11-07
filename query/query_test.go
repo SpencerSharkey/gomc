@@ -97,9 +97,8 @@ func TestSimpleQueryTimeouts(t *testing.T) {
 	serverAddr := <-serverOpen
 
 	req := NewRequest()
-	req.SetReadTimeout(250)
-
 	req.Connect(serverAddr)
+	req.SetReadTimeout(100)
 
 	var err error
 	_, err = req.Simple()
@@ -107,21 +106,22 @@ func TestSimpleQueryTimeouts(t *testing.T) {
 		t.Fatal("simple query challenge timeout test failed to produce error")
 	}
 
-	/*
-		// Query request timeout test
-		serverOpen = make(chan string)
-		go startQueryServer(serverOpen, &QueryServerOptions{
-			simulateQueryTimeout: true,
-		})
-		serverAddr = <-serverOpen
 
-		req.Connect(serverAddr)
+	// Query request timeout test
+	serverOpen = make(chan string)
+	go startQueryServer(serverOpen, &QueryServerOptions{
+		simulateQueryTimeout: true,
+	})
+	serverAddr = <-serverOpen
 
-		_, err = req.Simple()
-		if err == nil {
-			t.Fatal("simple query timeout test failed to produce error (malformed query response)")
-		}
-	*/
+	req.Connect(serverAddr)
+	req.SetReadTimeout(100)
+
+	_, err = req.Simple()
+	if err == nil {
+		t.Fatal("simple query timeout test failed to produce error (malformed query response)")
+	}
+
 }
 
 // Tests if we fail to resolve a hostname addr

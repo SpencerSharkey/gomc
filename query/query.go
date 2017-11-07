@@ -75,10 +75,14 @@ func (req *Request) GetChallengeToken() (int32, error) {
 		return -1, err
 	}
 
+	if len(res) < 6 {
+		return -1, errors.New("malformed challenge response")
+	}
+
 	// Parse challenge response
 	challengeToken, err := strconv.ParseUint(string(res[5:bytes.IndexByte(res[5:], 0x00)+5]), 10, 32)
 	if err != nil {
-		return -1, errors.New("error parsing challenge response from server")
+		return -1, errors.New("malformed challenge response")
 	}
 
 	return int32(challengeToken), nil
@@ -98,7 +102,7 @@ func (req *Request) ReadWithDeadline(length int, timeout time.Duration) ([]byte,
 	if bytes == 0 || err != nil {
 		return nil, errors.New("timeout of " + strconv.Itoa(int(timeout)) + "ms exceeded when reading from server (" + err.Error() + ")")
 	}
-	return res, nil
+	return res[:bytes], nil
 }
 
 // GenerateSessionID - Generates a 32-bit SessionID

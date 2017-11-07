@@ -48,17 +48,16 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	req.con.Write(buf.Bytes())
 
 	// Read and parse query data
-
-	reader := bufio.NewReader(req.con)
-
-	req.con.SetReadDeadline(time.Now().Add(req.readTimeout * time.Millisecond))
-	reader.Discard(5) // Discard header data
-
-	if reader.Buffered() < 5 {
-		return nil, errors.New("malformed query response")
+	data, err := req.ReadWithDeadline(512, req.readTimeout)
+	if err != nil {
+		return response, err
 	}
 
-	scan := bufio.NewScanner(reader)
+	if len(data) < 6 {
+		return response, errors.New("malformed query response")
+	}
+
+	scan := bufio.NewScanner(bytes.NewReader(data[5:]))
 	scan.Split(scanDelimittedResponse)
 
 	scan.Scan()
