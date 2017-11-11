@@ -20,7 +20,9 @@ func checkFatalErr(t *testing.T, err error) {
 
 func TestSimpleQuery(t *testing.T) {
 	serverOpen := make(chan string)
-	go startQueryServer(serverOpen, &defaultQueryServerOptions)
+	go startQueryServer(serverOpen, &QueryServerOptions{
+		negativeChallengeResponse: true,
+	})
 	serverAddr := <-serverOpen
 	req := NewRequest()
 	err := req.Connect(serverAddr)
@@ -169,6 +171,7 @@ func TestSimpleQueryResolveFail(t *testing.T) {
 
 type QueryServerOptions struct {
 	malformedChallengeReponse bool
+	negativeChallengeResponse bool
 	malformedQueryResponse    bool
 	malformedResponseHeader   bool
 	simulateChallengeTimeout  bool
@@ -225,6 +228,9 @@ func startQueryServer(serverOpen chan string, opts *QueryServerOptions) {
 				if opts.malformedChallengeReponse == true {
 					payload.WriteByte(0x99)
 				} else {
+					if opts.negativeChallengeResponse == true {
+						payload.WriteString("-")
+					}
 					payload.WriteString("9513307")
 					payload.WriteByte(0x00)
 				}
