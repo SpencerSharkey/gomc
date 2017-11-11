@@ -25,6 +25,7 @@ func TestSimpleQuery(t *testing.T) {
 	req := NewRequest()
 	err := req.Connect(serverAddr)
 	checkFatalErr(t, err)
+	req.SetReadTimeout(20)
 	res, err := req.Simple()
 	checkFatalErr(t, err)
 
@@ -43,6 +44,26 @@ func TestSimpleQuery(t *testing.T) {
 }
 
 // Tests malformed challenge response error handling
+func TestSimpleMalformedHeader(t *testing.T) {
+	serverOpen := make(chan string)
+	go startQueryServer(serverOpen, &QueryServerOptions{
+		malformedResponseHeader: true,
+	})
+	serverAddr := <-serverOpen
+
+	req := NewRequest()
+	err := req.Connect(serverAddr)
+	req.SetReadTimeout(20)
+
+	checkFatalErr(t, err)
+
+	_, err = req.Simple()
+	if err == nil {
+		t.Fatal("invalid challenge response should throw error")
+	}
+}
+
+// Tests malformed challenge response error handling
 func TestSimpleMalformedChallenge(t *testing.T) {
 	serverOpen := make(chan string)
 	go startQueryServer(serverOpen, &QueryServerOptions{
@@ -52,6 +73,8 @@ func TestSimpleMalformedChallenge(t *testing.T) {
 
 	req := NewRequest()
 	err := req.Connect(serverAddr)
+	req.SetReadTimeout(20)
+
 	checkFatalErr(t, err)
 
 	_, err = req.Simple()
@@ -70,6 +93,8 @@ func TestSimpleMalformedQuery(t *testing.T) {
 
 	req := NewRequest()
 	err := req.Connect(serverAddr)
+	req.SetReadTimeout(20)
+
 	checkFatalErr(t, err)
 
 	_, err = req.Simple()
@@ -98,14 +123,13 @@ func TestSimpleQueryTimeouts(t *testing.T) {
 
 	req := NewRequest()
 	req.Connect(serverAddr)
-	req.SetReadTimeout(100)
+	req.SetReadTimeout(20)
 
 	var err error
 	_, err = req.Simple()
 	if err == nil {
 		t.Fatal("simple query challenge timeout test failed to produce error")
 	}
-
 
 	// Query request timeout test
 	serverOpen = make(chan string)
@@ -115,7 +139,7 @@ func TestSimpleQueryTimeouts(t *testing.T) {
 	serverAddr = <-serverOpen
 
 	req.Connect(serverAddr)
-	req.SetReadTimeout(100)
+	req.SetReadTimeout(20)
 
 	_, err = req.Simple()
 	if err == nil {
@@ -146,6 +170,7 @@ func TestSimpleQueryResolveFail(t *testing.T) {
 type QueryServerOptions struct {
 	malformedChallengeReponse bool
 	malformedQueryResponse    bool
+	malformedResponseHeader   bool
 	simulateChallengeTimeout  bool
 	simulateQueryTimeout      bool
 }
@@ -177,29 +202,33 @@ func startQueryServer(serverOpen chan string, opts *QueryServerOptions) {
 		// Validate magic bytes
 		if bytes.Compare(msg[:2], []byte{0xFE, 0xFD}) == 0 {
 			msgType := msg[2]
-			msgSessionID := msg[2:6]
+			msgSessionID := msg[3:7]
+
+			if opts.malformedResponseHeader == true {
+				payload := &bytes.Buffer{}
+				payload.WriteByte(0x09)
+				payload.Write([]byte{0x00, 0x00, 0x00, 0x00})
+				_, err = serv.WriteToUDP(payload.Bytes(), clientAddr)
+				fatalServerError(err)
+			}
 
 			if msgType == 0x09 { // challenge token response
-
-				// Handle test cases (if set)
-				if opts.malformedChallengeReponse == true {
-					// send some garbage
-					serv.WriteToUDP([]byte{53, 156, 15, 123, 158}, clientAddr)
-					continue
-				}
 
 				if opts.simulateChallengeTimeout == true {
 					continue
 				}
 
-				// Construct our valid response
 				payload := &bytes.Buffer{}
 				payload.WriteByte(0x09)
 				payload.Write(msgSessionID)
-				payload.WriteString("1234")
-				payload.WriteByte(0x00)
 
-				// Send data
+				if opts.malformedChallengeReponse == true {
+					payload.WriteByte(0x99)
+				} else {
+					payload.WriteString("9513307")
+					payload.WriteByte(0x00)
+				}
+
 				_, err = serv.WriteToUDP(payload.Bytes(), clientAddr)
 				fatalServerError(err)
 

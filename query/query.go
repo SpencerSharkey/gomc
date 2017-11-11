@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"io"
 	"math/rand"
 	"net"
 	"strconv"
@@ -26,7 +27,10 @@ var (
 type Request struct {
 	con         *net.UDPConn
 	readTimeout time.Duration
-	sesssionID  int32
+	sessionID   [4]byte
+
+	challengeTokenCache   [4]byte
+	challengeTokenExpires time.Time
 }
 
 // NewRequest - Query request factory
@@ -47,45 +51,82 @@ func (req *Request) Connect(hostaddr string) error {
 		return errors.New("error dialing udp4: " + err.Error())
 	}
 
-	// set default read timeout
+	// set default read timeout (5s)
 	req.readTimeout = 5000
 
-	// Generate a Session ID
-	req.sesssionID = GenerateSessionID()
+	// Generate a sessionID for future requests
+	req.GenerateSessionID()
 
 	return nil
 }
 
-// GetChallengeToken - Retrives a challenge token from the server
-func (req *Request) GetChallengeToken() (int32, error) {
+// GetChallengeToken - Retrieves a challenge token from the server
+func (req *Request) GetChallengeToken() ([]byte, error) {
 	if req.con == nil {
-		return -1, errors.New("no connection, call Request.Connect first")
+		return nil, errors.New("no connection, call Request.Connect first")
 	}
 
-	// Build challenge token request packet
-	buf := &bytes.Buffer{}
-	buf.Write(*magicHeader)
-	buf.WriteByte(0x09) // Packet Type 0x09 = Challenge Request
-	binary.Write(buf, binary.BigEndian, req.sesssionID)
+	// Build challenge request packet and write to socket
+	reqBuf := []byte{0xFE, 0xFD, 0x09, 0x00, 0x00, 0x00, 0x00}
+	copy(reqBuf[3:], req.sessionID[0:])
+	req.con.Write(reqBuf[:])
 
-	req.con.Write(buf.Bytes())
-
-	res, err := req.ReadWithDeadline(24, req.readTimeout)
+	// read full response from socket
+	resBuf, err := req.ReadWithDeadline()
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
-	if len(res) < 6 {
-		return -1, errors.New("malformed challenge response")
-	}
-
-	// Parse challenge response
-	challengeToken, err := strconv.ParseUint(string(res[5:bytes.IndexByte(res[5:], 0x00)+5]), 10, 32)
+	// ensure our response header is good2go
+	err = req.VerifyResponseHeader(resBuf)
 	if err != nil {
-		return -1, errors.New("malformed challenge response")
+		return nil, err
 	}
 
-	return int32(challengeToken), nil
+	// read until end delimiter
+	res, err := resBuf.ReadBytes(0x00)
+	if err != nil {
+		return nil, errors.New("malformed challenge response")
+	}
+
+	// chop off tailing null byte and convert to string, then to int
+	tokenString := string(res[:len(res)-1])
+	tokenInt, err := strconv.ParseInt(tokenString, 10, 32)
+	if err != nil {
+		return nil, errors.New("malformed challenge response")
+	}
+
+	// Convert our integer to byte array and return
+	tokenBuf := &bytes.Buffer{}
+	binary.Write(tokenBuf, binary.BigEndian, tokenInt)
+	tokenBytes := tokenBuf.Bytes()
+	return tokenBytes[len(tokenBytes)-4:], nil
+}
+
+// VerifyResponseHeader - verifies the 5-byte response header and validates the sessionID
+func (req *Request) VerifyResponseHeader(input *bytes.Buffer) error {
+	var buf [5]byte
+	var err error
+	var bytesRead int
+
+	// first byte is always 0x00 or 0x09 (packet type)
+	bytesRead, err = input.Read(buf[:1])
+	if err != nil || bytesRead != 1 || (buf[0] != 0x00 && buf[0] != 0x09) {
+		return errors.New("invalid response header")
+	}
+
+	// next 4 bytes are the sessionID (int32)
+	bytesRead, err = input.Read(buf[1:])
+	if err != nil || bytesRead != 4 {
+		return errors.New("invalid response header")
+	}
+
+	// compare to our generated sessionID
+	if bytes.Compare(buf[1:], req.sessionID[0:]) != 0 {
+		return errors.New("invalid server sessionID")
+	}
+
+	return nil
 }
 
 // SetReadTimeout specifies the maximum time to take reading from server before timeout (in milliseconds)
@@ -94,21 +135,40 @@ func (req *Request) SetReadTimeout(timeout time.Duration) {
 }
 
 // ReadWithDeadline will read from our socket with a specified timeout
-func (req *Request) ReadWithDeadline(length int, timeout time.Duration) ([]byte, error) {
-	res := make([]byte, length)
-	req.con.SetDeadline(time.Now().Add(timeout * time.Millisecond))
-	bytes, err := req.con.Read(res)
-	req.con.SetDeadline(time.Time{})
-	if bytes == 0 || err != nil {
-		return nil, errors.New("timeout of " + strconv.Itoa(int(timeout)) + "ms exceeded when reading from server (" + err.Error() + ")")
+func (req *Request) ReadWithDeadline() (*bytes.Buffer, error) {
+	var buf [128]byte
+	var res = &bytes.Buffer{}
+	defer req.con.SetDeadline(time.Time{})
+	// A simple read loop, this function handles multi-packet responses until EOF
+	for {
+		req.con.SetDeadline(time.Now().Add(req.readTimeout * time.Millisecond))
+		bytes, err := req.con.Read(buf[0:])
+		if bytes > 0 {
+			res.Write(buf[:bytes])
+		}
+		if bytes == 0 && err != io.EOF {
+			return nil, errors.New("timeout exceeded when reading from server (" + err.Error() + ")")
+		}
+		if err == io.EOF || bytes < 128 {
+			break
+		}
 	}
-	return res[:bytes], nil
+	return res, nil
 }
 
 // GenerateSessionID - Generates a 32-bit SessionID
-func GenerateSessionID() int32 {
+func (req *Request) GenerateSessionID() {
+	var buf [4]byte
+
 	rand.Seed(time.Now().UTC().UnixNano())
-	return rand.Int31() & 0x0F0F0F0F
+	rand.Read(buf[0:])
+
+	// make sessionID 'minecraft-safe'
+	for i := 0; i < 4; i++ {
+		buf[i] = buf[i] & 0x0F
+	}
+
+	req.sessionID = buf
 }
 
 // A simple scanner func to read our null-byte delimited data

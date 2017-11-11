@@ -7,9 +7,7 @@ package query
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/binary"
-	"errors"
 	"strconv"
 	"time"
 )
@@ -29,35 +27,27 @@ type SimpleResponse struct {
 func (req *Request) Simple() (*SimpleResponse, error) {
 	response := &SimpleResponse{}
 
-	if req.con == nil {
-		return response, errors.New("no connection, call Request.Connect first")
-	}
-
 	challengeToken, err := req.GetChallengeToken()
 	if err != nil {
 		return nil, err
 	}
 
-	// Build simple query request packet
-	buf := &bytes.Buffer{}
-	buf.Write(*magicHeader)
-	buf.WriteByte(0x00) // Packet Type 0x00 = Query Request
-	binary.Write(buf, binary.BigEndian, req.sesssionID)
-	binary.Write(buf, binary.BigEndian, challengeToken)
+	reqBuf := []byte{0xFE, 0xFD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	copy(reqBuf[3:], req.sessionID[0:])
+	copy(reqBuf[7:], challengeToken)
+	req.con.Write(reqBuf[:])
 
-	req.con.Write(buf.Bytes())
-
-	// Read and parse query data
-	data, err := req.ReadWithDeadline(512, req.readTimeout)
+	resBuf, err := req.ReadWithDeadline()
 	if err != nil {
 		return response, err
 	}
 
-	if len(data) < 6 {
-		return response, errors.New("malformed query response")
+	err = req.VerifyResponseHeader(resBuf)
+	if err != nil {
+		return response, err
 	}
 
-	scan := bufio.NewScanner(bytes.NewReader(data[5:]))
+	scan := bufio.NewScanner(resBuf)
 	scan.Split(scanDelimittedResponse)
 
 	scan.Scan()

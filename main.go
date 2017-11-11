@@ -7,8 +7,10 @@ import (
 	"github.com/SpencerSharkey/gomc/query"
 )
 
-// simple query test
-func main() {
+// Version - app release version
+const Version string = "0.0.1"
+
+func doQuery() {
 	req := query.NewRequest()
 
 	err := req.Connect(os.Args[1])
@@ -22,4 +24,9 @@ func main() {
 	}
 
 	log.Printf("%#v\n", res)
+}
+
+// simple query test
+func main() {
+	doQuery()
 }
