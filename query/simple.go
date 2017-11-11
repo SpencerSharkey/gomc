@@ -32,7 +32,7 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 		return nil, err
 	}
 
-	reqBuf := []byte{0xFE, 0xFD, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	reqBuf := [11]byte{0xFE, 0xFD}
 	copy(reqBuf[3:], req.sessionID[0:])
 	copy(reqBuf[7:], challengeToken)
 	req.con.Write(reqBuf[:])

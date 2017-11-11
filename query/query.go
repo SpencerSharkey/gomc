@@ -67,7 +67,7 @@ func (req *Request) GetChallengeToken() ([]byte, error) {
 	}
 
 	// Build challenge request packet and write to socket
-	reqBuf := []byte{0xFE, 0xFD, 0x09, 0x00, 0x00, 0x00, 0x00}
+	reqBuf := [7]byte{0xFE, 0xFD, 0x09}
 	copy(reqBuf[3:], req.sessionID[0:])
 	req.con.Write(reqBuf[:])
 
