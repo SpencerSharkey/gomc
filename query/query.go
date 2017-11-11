@@ -146,11 +146,11 @@ func (req *Request) ReadWithDeadline() (*bytes.Buffer, error) {
 		if bytes > 0 {
 			res.Write(buf[:bytes])
 		}
-		if bytes == 0 && err != io.EOF {
-			return nil, errors.New("timeout exceeded when reading from server (" + err.Error() + ")")
-		}
 		if err == io.EOF || bytes < 128 {
 			break
+		}
+		if bytes == 0 && err != io.EOF {
+			return nil, errors.New("timeout exceeded when reading from server (" + err.Error() + ")")
 		}
 	}
 	return res, nil
