@@ -13,13 +13,13 @@ import (
 
 // SimpleResponse - Simple Minecraft server query response
 type SimpleResponse struct {
-	MOTD       string
-	GameType   string
-	Map        string
-	NumPlayers int
-	MaxPlayers int
-	HostPort   int16
-	HostIP     string
+	MOTD       string `json:"motd"`
+	GameType   string `json:"gametype"`
+	Map        string `json:"map"`
+	NumPlayers int    `json:"numplayers"`
+	MaxPlayers int    `json:"maxplayers"`
+	HostPort   int16  `json:"hostport"`
+	HostIP     string `json:"hostip"`
 }
 
 // Simple - Make a simple query request

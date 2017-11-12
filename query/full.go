@@ -12,8 +12,8 @@ import (
 
 // FullResponse - Full Minecraft server query response
 type FullResponse struct {
-	Info    map[string]string
-	Players []string
+	Info    map[string]string `json:"info"`
+	Players []string          `json:"players"`
 }
 
 // Full - Make a full query request
