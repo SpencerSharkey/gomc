@@ -136,7 +136,7 @@ func (req *Request) SetReadTimeout(timeout time.Duration) {
 
 // ReadWithDeadline will read from our socket with a specified timeout
 func (req *Request) ReadWithDeadline() (*bytes.Buffer, error) {
-	var buf [128]byte
+	var buf [2048]byte
 	var res = &bytes.Buffer{}
 	defer req.con.SetDeadline(time.Time{})
 	// A simple read loop, this function handles multi-packet responses until EOF
@@ -146,12 +146,13 @@ func (req *Request) ReadWithDeadline() (*bytes.Buffer, error) {
 		if bytes > 0 {
 			res.Write(buf[:bytes])
 		}
-		if err == io.EOF || bytes < 128 {
+		if err == io.EOF || bytes < 2048 {
 			break
 		}
 		if bytes == 0 && err != io.EOF {
 			return nil, errors.New("timeout exceeded when reading from server (" + err.Error() + ")")
 		}
+
 	}
 	return res, nil
 }
