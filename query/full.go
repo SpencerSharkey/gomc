@@ -8,10 +8,13 @@ package query
 import (
 	"io"
 	"io/ioutil"
+	"strconv"
+	"strings"
 )
 
 // FullResponse - Full Minecraft server query response
 type FullResponse struct {
+	SimpleResponse
 	Info    map[string]string `json:"info"`
 	Players []string          `json:"players"`
 }
@@ -51,8 +54,9 @@ func (req *Request) Full() (*FullResponse, error) {
 		if err != nil {
 			return response, err
 		}
+		key = key[:len(key)-1]
 
-		if len(key) == 1 {
+		if len(key) == 0 {
 			break
 		}
 
@@ -60,7 +64,29 @@ func (req *Request) Full() (*FullResponse, error) {
 		if err != nil {
 			return response, err
 		}
-		response.Info[key[:len(key)-1]] = value[:len(value)-1]
+
+		value = value[:len(value)-1]
+
+		switch strings.ToLower(key) {
+		case "hostname":
+			response.MOTD = value
+		case "gametype":
+			response.GameType = value
+		case "map":
+			response.Map = value
+		case "maxplayers":
+			response.MaxPlayers, _ = strconv.Atoi(value)
+		case "numplayers":
+			response.NumPlayers, _ = strconv.Atoi(value)
+		case "hostport":
+			hostPort, _ := strconv.Atoi(value)
+			response.HostPort = int16(hostPort)
+		case "hostip":
+			response.HostIP = value
+		default:
+			response.Info[key] = value
+		}
+
 	}
 
 	io.CopyN(ioutil.Discard, resBuf, 11)
