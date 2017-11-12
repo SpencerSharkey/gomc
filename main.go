@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 
@@ -10,10 +11,28 @@ import (
 // Version - app release version
 const Version string = "0.0.1"
 
-func doQuery() {
+func doSimpleQuery(addr string) {
 	req := query.NewRequest()
 
-	err := req.Connect(os.Args[1])
+	err := req.Connect(addr)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	res, err := req.Simple()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("=== SIMPLE QUERY ===")
+	o, _ := json.MarshalIndent(res, "", "  ")
+	log.Println(string(o))
+}
+
+func doFullQuery(addr string) {
+	req := query.NewRequest()
+
+	err := req.Connect(addr)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -23,10 +42,13 @@ func doQuery() {
 		log.Fatalln(err)
 	}
 
-	log.Printf("%#v\n", res)
+	log.Println("==== FULL QUERY ====")
+	o, _ := json.MarshalIndent(res, "", "  ")
+	log.Println(string(o))
 }
 
 // simple query test
 func main() {
-	doQuery()
+	doSimpleQuery(os.Args[1])
+	doFullQuery(os.Args[1])
 }
