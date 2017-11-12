@@ -9,7 +9,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"strconv"
-	"time"
 )
 
 // SimpleResponse - Simple Minecraft server query response
@@ -69,7 +68,6 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	portAndIP := scan.Bytes()
 	response.HostPort = int16(binary.LittleEndian.Uint16(portAndIP[:2]))
 	response.HostIP = string(portAndIP[2:])
-	req.con.SetReadDeadline(time.Time{})
 
 	return response, nil
 }
