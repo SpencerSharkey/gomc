@@ -16,13 +16,6 @@ import (
 	"time"
 )
 
-var (
-	// Used at the beginning of any query request
-	magicHeader = &[]byte{0xFE, 0xFD}
-	// Used at the end of a full-stats query request
-	magicPadding = &[]byte{0x00, 0x00, 0x00, 0x00}
-)
-
 // Request - Query Client
 type Request struct {
 	con         *net.UDPConn
