@@ -18,7 +18,7 @@ func doQuery() {
 		log.Fatalln(err)
 	}
 
-	res, err := req.Simple()
+	res, err := req.Full()
 	if err != nil {
 		log.Fatalln(err)
 	}
