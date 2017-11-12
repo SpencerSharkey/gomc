@@ -13,7 +13,7 @@ import (
 
 // SimpleResponse - Simple Minecraft server query response
 type SimpleResponse struct {
-	MOTD       string `json:"motd"`
+	Hostname   string `json:"hostname"`
 	GameType   string `json:"gametype"`
 	Map        string `json:"map"`
 	NumPlayers int    `json:"numplayers"`
@@ -50,7 +50,7 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	scan.Split(scanDelimittedResponse)
 
 	scan.Scan()
-	response.MOTD = scan.Text()
+	response.Hostname = scan.Text()
 
 	scan.Scan()
 	response.GameType = scan.Text()

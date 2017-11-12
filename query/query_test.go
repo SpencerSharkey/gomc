@@ -36,7 +36,7 @@ func TestSimpleQuery(t *testing.T) {
 	checkFatalErr(t, err)
 
 	validResponse := &SimpleResponse{
-		MOTD:       "A Minecraft Server",
+		Hostname:   "A Minecraft Server",
 		GameType:   "SMP",
 		Map:        "world",
 		NumPlayers: 2,

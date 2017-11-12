@@ -69,7 +69,7 @@ func (req *Request) Full() (*FullResponse, error) {
 
 		switch strings.ToLower(key) {
 		case "hostname":
-			response.MOTD = value
+			response.Hostname = value
 		case "gametype":
 			response.GameType = value
 		case "map":
