@@ -26,7 +26,7 @@ type SimpleResponse struct {
 func (req *Request) Simple() (*SimpleResponse, error) {
 	response := &SimpleResponse{}
 
-	challengeToken, err := req.GetChallengeToken()
+	challengeToken, err := req.getChallengeToken()
 	if err != nil {
 		return nil, err
 	}
@@ -36,12 +36,12 @@ func (req *Request) Simple() (*SimpleResponse, error) {
 	copy(reqBuf[7:], challengeToken)
 	req.con.Write(reqBuf[:])
 
-	resBuf, err := req.ReadWithDeadline()
+	resBuf, err := req.readWithDeadline()
 	if err != nil {
 		return response, err
 	}
 
-	err = req.VerifyResponseHeader(resBuf)
+	err = req.verifyResponseHeader(resBuf)
 	if err != nil {
 		return response, err
 	}

@@ -48,13 +48,13 @@ func (req *Request) Connect(hostaddr string) error {
 	req.readTimeout = 5000
 
 	// Generate a sessionID for future requests
-	req.GenerateSessionID()
+	req.generateSessionID()
 
 	return nil
 }
 
 // GetChallengeToken - Retrieves a challenge token from the server
-func (req *Request) GetChallengeToken() ([]byte, error) {
+func (req *Request) getChallengeToken() ([]byte, error) {
 	if req.con == nil {
 		return nil, errors.New("no connection, call Request.Connect first")
 	}
@@ -65,13 +65,13 @@ func (req *Request) GetChallengeToken() ([]byte, error) {
 	req.con.Write(reqBuf[:])
 
 	// read full response from socket
-	resBuf, err := req.ReadWithDeadline()
+	resBuf, err := req.readWithDeadline()
 	if err != nil {
 		return nil, err
 	}
 
 	// ensure our response header is good2go
-	err = req.VerifyResponseHeader(resBuf)
+	err = req.verifyResponseHeader(resBuf)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (req *Request) GetChallengeToken() ([]byte, error) {
 }
 
 // VerifyResponseHeader - verifies the 5-byte response header and validates the sessionID
-func (req *Request) VerifyResponseHeader(input *bytes.Buffer) error {
+func (req *Request) verifyResponseHeader(input *bytes.Buffer) error {
 	var buf [5]byte
 	var err error
 	var bytesRead int
@@ -128,7 +128,7 @@ func (req *Request) SetReadTimeout(timeout time.Duration) {
 }
 
 // ReadWithDeadline will read from our socket with a specified timeout
-func (req *Request) ReadWithDeadline() (*bytes.Buffer, error) {
+func (req *Request) readWithDeadline() (*bytes.Buffer, error) {
 	var buf [2048]byte
 	var res = &bytes.Buffer{}
 	defer req.con.SetDeadline(time.Time{})
@@ -151,7 +151,7 @@ func (req *Request) ReadWithDeadline() (*bytes.Buffer, error) {
 }
 
 // GenerateSessionID - Generates a 32-bit SessionID
-func (req *Request) GenerateSessionID() {
+func (req *Request) generateSessionID() {
 	var buf [4]byte
 
 	rand.Seed(time.Now().UTC().UnixNano())
