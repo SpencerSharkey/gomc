@@ -32,9 +32,9 @@ type SimpleResponse struct {
 ```
 Simple request example:
 ```golang
-	req := query.NewRequest()
-	err := req.Connect("127.0.0.1:25565")
-	res, err := req.Simple()
+req := query.NewRequest()
+err := req.Connect("127.0.0.1:25565")
+res, err := req.Simple()
 ```
 ```json
 {
@@ -58,9 +58,9 @@ type FullResponse struct {
 ```
 Full request example:
 ```golang
-	req := query.NewRequest()
-	err := req.Connect("127.0.0.1:25565")
-	res, err := req.Full()
+req := query.NewRequest()
+err := req.Connect("127.0.0.1:25565")
+res, err := req.Full()
 ```
 ```json
 {
