@@ -11,10 +11,10 @@ Go (golang) library for Minecraft utilities.
 The only functionality currently implemented is a query client compatible with the vanilla Minecraft [query protocol](http://wiki.vg/Query).
 
 Planned packages:
-* ~~query~~
+* ~~query~~ [/query](https://github.com/SpencerSharkey/gomc/tree/master/query)
 * rcon
 
-**Note:** This package is being developed for use within the spencersharkey/mcapi application, aimed at exposing an HTTP client for various Minecraft-related utilities.
+**Note:** This package is being developed for use within the [spencersharkey/mcapi](https://github.com/spencersharkey/mcapi) application, aimed at exposing an HTTP client for various Minecraft-related utilities.
 
 ## "query" Package Documentation
 
